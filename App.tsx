@@ -3,6 +3,7 @@ import * as React from 'react';
 import {
   Dimensions,
   Image,
+  StatusBar,
   StyleSheet,
   TouchableOpacity,
   View,
@@ -10,7 +11,6 @@ import {
 import {Searchbar} from 'react-native-paper';
 import GifPlayer from './components/GifPlayer';
 
-import Constants from 'expo-constants';
 import {
   API_KEY,
   BASE_URL,
@@ -43,6 +43,8 @@ function App() {
   const searchAPICall = React.useCallback(
     function (searchText: any) {
       const url = `${BASE_URL}${SEARCH}?api_key=${API_KEY}&limit=${PAGE_SIZE}&rating=${RATING}&offset=0&q=${searchText}`;
+      console.log(`debounce ${searchText}`);
+      if (offSet != 0) setOffSet(0);
       (async () => {
         let responseString = await fetch(url);
         let response = await responseString.json();
@@ -53,7 +55,7 @@ function App() {
             id: item.id,
             width: 160 * widthRatio,
             height: 160 * (height / width) * widthRatio,
-            key: offSet * PAGE_SIZE + index,
+            key: index,
           };
         });
         setData(curr_data);
@@ -83,9 +85,10 @@ function App() {
 
   React.useEffect(() => {
     const trendingOrSearch = searchText === '' ? TRENDING : SEARCH;
+    if (offSet == 0 && searchText != '') return;
     if (offSet < totalCount) {
       const url = `${BASE_URL}${trendingOrSearch}?api_key=${API_KEY}&limit=${PAGE_SIZE}&rating=${RATING}&offset=${offSet}&q=${searchText}`;
-      console.log('url', url);
+      console.log(`offset ${offSet}`);
       (async () => {
         let responseString = await fetch(url);
         let response = await responseString.json();
@@ -108,15 +111,13 @@ function App() {
     } else {
       console.log('End Reached');
     }
-  }, [offSet, searchText, totalCount]);
+  }, [offSet]);
 
   React.useEffect(() => {
-    if (offSet != 0) setOffSet(0);
-
     if (searchText !== '') {
       debouncedSearchAPICall(searchText);
     }
-  }, [debouncedSearchAPICall, offSet, searchText]);
+  }, [searchText]);
 
   return (
     <View
@@ -124,7 +125,7 @@ function App() {
         styles.container,
         {backgroundColor: isLightTheme == true ? WHITE : BLACK},
       ]}>
-      <View style={{position: 'relative', top: 0, left: 0}}>
+      <>
         <View
           style={{
             flexDirection: 'row',
@@ -143,7 +144,7 @@ function App() {
           </View>
           {renderThemeToggler()}
         </View>
-      </View>
+      </>
       <MasonryList
         data={data}
         keyExtractor={(item): string => item.id}
@@ -159,7 +160,7 @@ function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: Constants.statusBarHeight + 10,
+    paddingTop: StatusBar.currentHeight,
     padding: 5,
   },
 });
